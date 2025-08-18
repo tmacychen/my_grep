@@ -37,8 +37,8 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                         return true;
                     }
                 } else {
-                    if input_line.chars().any(|ch| ch == c) {
-                        return false;
+                    if input_line.chars().all(|ch| ch != c) {
+                        return true;
                     }
                 }
             }

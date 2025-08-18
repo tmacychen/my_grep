@@ -26,10 +26,20 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
     };
 
     let match_brackets = |slice: &str| -> bool {
+        let mut reverse: bool = false;
+        if slice.chars().peekable().peek().unwrap() == &'^' {
+            reverse = true;
+        }
         for c in slice.chars() {
             if c.is_ascii_alphabetic() {
-                if input_line.chars().any(|ch| ch == c) {
-                    return true;
+                if reverse == false {
+                    if input_line.chars().any(|ch| ch == c) {
+                        return true;
+                    }
+                } else {
+                    if input_line.chars().any(|ch| ch == c) {
+                        return false;
+                    }
                 }
             }
         }

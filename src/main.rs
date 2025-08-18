@@ -17,8 +17,12 @@ struct Arg {
 }
 
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
-    let re = regex::Regex::new(pattern).unwrap();
-    re.is_match(input_line)
+    if pattern.chars().count() == 1 {
+        log::debug!("count is 1");
+        return input_line.contains(pattern);
+    } else {
+        input_line.chars().any(|c| c.is_alphabetic())
+    }
 }
 
 // Usage: echo <input_text> | your_program.sh -E <pattern>

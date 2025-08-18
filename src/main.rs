@@ -1,8 +1,8 @@
-use std::env;
 use std::io;
 use std::process;
 
-use clap::{Parser, Subcommand};
+use clap::Parser;
+use tklog::{error, info, Format, LEVEL, LOG};
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -11,15 +11,16 @@ struct Arg {
     name: Option<String>,
 
     /// Sets a custom config file
-    #[arg(short)]
-    E: String,
+    #[arg(short = 'E')]
+    pattern: Option<String>,
 }
 
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
     if pattern.chars().count() == 1 {
+        log::debug!("count is 1");
         return input_line.contains(pattern);
     } else {
-        panic!("Unhandled pattern: {}", pattern)
+        input_line.chars().any(|c| c.is_ascii_digit())
     }
 }
 
@@ -27,21 +28,24 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
 fn main() {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
     // eprintln!("Logs from your program will appear here!");
+    LOG.set_level(LEVEL::Debug)
+        .set_console(true)
+        .set_format(Format::LevelFlag | Format::ShortFileName)
+        .set_formatter("{level}{file}:{message}\n")
+        .uselog();
 
-    if env::args().nth(1).unwrap() != "-E" {
-        println!("Expected first argument to be '-E'");
-        process::exit(1);
-    }
+    let args = Arg::parse();
 
-    let pattern = env::args().nth(2).unwrap();
-    let mut input_line = String::new();
+    if let Some(pattern) = args.pattern {
+        let mut input_line = String::new();
+        io::stdin().read_line(&mut input_line).unwrap();
 
-    io::stdin().read_line(&mut input_line).unwrap();
-
-    // Uncomment this block to pass the first stage
-    if match_pattern(&input_line, &pattern) {
-        process::exit(0)
-    } else {
-        process::exit(1)
+        // Uncomment this block to pass the first stage
+        log::debug!("{pattern},{input_line}");
+        if match_pattern(&input_line, &pattern) {
+            process::exit(0)
+        } else {
+            process::exit(1)
+        }
     }
 }

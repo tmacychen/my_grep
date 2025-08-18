@@ -21,9 +21,13 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
         log::debug!("count is 1");
         return input_line.contains(pattern);
     } else {
-        input_line
-            .chars()
-            .any(|c| c.is_ascii_alphanumeric() || c == '_')
+        match pattern {
+            "\\d" => input_line.chars().any(|c| c.is_numeric()),
+            "\\w" => input_line
+                .chars()
+                .any(|c| c.is_ascii_alphanumeric() || c == '_'),
+            _ => false,
+        }
     }
 }
 

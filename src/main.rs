@@ -2,6 +2,19 @@ use std::env;
 use std::io;
 use std::process;
 
+use clap::{Parser, Subcommand};
+
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Arg {
+    /// Optional name to operate on
+    name: Option<String>,
+
+    /// Sets a custom config file
+    #[arg(short)]
+    E: String,
+}
+
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
     if pattern.chars().count() == 1 {
         return input_line.contains(pattern);

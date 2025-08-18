@@ -213,6 +213,7 @@ dependencies = [
  "bytes",
  "clap",
  "log",
+ "regex",
  "thiserror",
  "tklog",
 ]

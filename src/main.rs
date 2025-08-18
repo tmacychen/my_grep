@@ -2,6 +2,7 @@ use std::io;
 use std::process;
 
 use clap::Parser;
+use tklog::debug;
 use tklog::{error, info, Format, LEVEL, LOG};
 
 #[derive(Parser)]
@@ -16,12 +17,8 @@ struct Arg {
 }
 
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
-    if pattern.chars().count() == 1 {
-        log::debug!("count is 1");
-        return input_line.contains(pattern);
-    } else {
-        input_line.chars().any(|c| c.is_ascii_digit())
-    }
+    let re = regex::Regex::new(pattern).unwrap();
+    re.is_match(input_line)
 }
 
 // Usage: echo <input_text> | your_program.sh -E <pattern>
@@ -29,10 +26,8 @@ fn main() {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
     // eprintln!("Logs from your program will appear here!");
     LOG.set_level(LEVEL::Debug)
-        .set_console(true)
         .set_format(Format::LevelFlag | Format::ShortFileName)
-        .set_formatter("{level}{file}:{message}\n")
-        .uselog();
+        .set_formatter("{level} | {file}:{message} \n");
 
     let args = Arg::parse();
 
@@ -43,8 +38,10 @@ fn main() {
         // Uncomment this block to pass the first stage
         log::debug!("{pattern},{input_line}");
         if match_pattern(&input_line, &pattern) {
+            println!("success exit 0!");
             process::exit(0)
         } else {
+            println!("fail exit 1!");
             process::exit(1)
         }
     }

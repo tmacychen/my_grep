@@ -2,6 +2,7 @@ use std::io;
 use std::process;
 
 use clap::Parser;
+use log::Log;
 use tklog::debug;
 use tklog::{error, info, Format, LEVEL, LOG};
 
@@ -17,47 +18,46 @@ struct Arg {
 }
 
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
-    let match_escape_char = |c: &str| match c {
-        "d" => input_line.chars().any(|c| c.is_numeric()),
-        "w" => input_line
-            .chars()
-            .any(|c| c.is_ascii_alphanumeric() || c == '_'),
-        _ => false,
-    };
+    let mut pattern_iter = pattern.chars();
+    let mut input_iter = input_line.chars();
 
-    let match_brackets = |slice: &str| -> bool {
-        let mut reverse: bool = false;
-        if slice.chars().peekable().peek().unwrap() == &'^' {
-            reverse = true;
-        }
-        for c in slice.chars() {
-            if c.is_ascii_alphabetic() {
-                if reverse == false {
-                    if input_line.chars().any(|ch| ch == c) {
-                        return true;
-                    }
-                } else {
-                    if input_line.chars().all(|ch| ch != c) {
-                        return true;
-                    }
+    let mut ret_value = false;
+
+    loop {
+        let pattern_char = pattern_iter.next().unwrap();
+        println!("pattern_char {}", pattern_char);
+        ret_value = match pattern_char {
+            '\\' => match pattern_iter.next().unwrap() {
+                'd' => input_iter.next().is_some_and(|c| c.is_numeric()),
+                'w' => input_iter
+                    .next()
+                    .is_some_and(|c| c.is_ascii_alphanumeric() || c == '_'),
+                _ => false,
+            },
+            '[' => {
+                let mut ret = false;
+                while !ret {
+                    let next_char = pattern_iter.next().unwrap();
+                    println!("next_char {}", next_char);
+                    ret = match next_char {
+                        'a'..='z' | 'A'..='Z' => input_line.chars().any(|c| c == next_char),
+                        ']' => false,
+                        _ => false,
+                    };
                 }
+                ret
             }
-        }
-        false
-    };
-
-    if pattern.chars().count() == 1 {
-        log::debug!("count is 1");
-        return input_line.contains(pattern);
-    } else {
-        let (first, last) = pattern.split_at(1);
-        match first {
-            "\\" => match_escape_char(last),
-
-            "[" => match_brackets(last),
-            _ => false,
+            ' ' | 'a'..='z' | 'A'..='Z' => input_iter.next().is_some_and(|c| c == pattern_char),
+            _ => {
+                break;
+            }
+        };
+        if ret_value || pattern_iter.clone().peekable().peek().is_none() {
+            break;
         }
     }
+
+    ret_value
 }
 
 // Usage: echo <input_text> | your_program.sh -E <pattern>
@@ -77,9 +77,11 @@ fn main() {
         // Uncomment this block to pass the first stage
         log::debug!("{pattern},{input_line}");
         if match_pattern(&input_line, &pattern) {
+            LOG.flush();
             println!("success exit 0!");
             process::exit(0)
         } else {
+            LOG.flush();
             println!("fail exit 1!");
             process::exit(1)
         }

@@ -17,15 +17,34 @@ struct Arg {
 }
 
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
+    let match_escape_char = |c: &str| match c {
+        "d" => input_line.chars().any(|c| c.is_numeric()),
+        "w" => input_line
+            .chars()
+            .any(|c| c.is_ascii_alphanumeric() || c == '_'),
+        _ => false,
+    };
+
+    let match_brackets = |slice: &str| -> bool {
+        for c in slice.chars() {
+            if c.is_ascii_alphabetic() {
+                if input_line.chars().any(|ch| ch == c) {
+                    return true;
+                }
+            }
+        }
+        false
+    };
+
     if pattern.chars().count() == 1 {
         log::debug!("count is 1");
         return input_line.contains(pattern);
     } else {
-        match pattern {
-            "\\d" => input_line.chars().any(|c| c.is_numeric()),
-            "\\w" => input_line
-                .chars()
-                .any(|c| c.is_ascii_alphanumeric() || c == '_'),
+        let (first, last) = pattern.split_at(1);
+        match first {
+            "\\" => match_escape_char(last),
+
+            "[" => match_brackets(last),
             _ => false,
         }
     }

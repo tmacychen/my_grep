@@ -38,21 +38,6 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
             let pattern_char = pattern_iter.next().unwrap();
             println!("pattern_char {}", pattern_char);
 
-            // 判断input 是none,则跳出循环
-            if input_iter.clone().peekable().peek().is_none() {
-                println!("input get end!");
-                //if input end but pattern not end,return false
-                if pattern_iter.clone().peekable().peek().is_some() {
-                    //如果没有匹配[],则匹配模式耗尽后返回false
-                    if !bracket_flag {
-                        ret_value = false;
-                        println!("continue");
-                        continue;
-                    }
-                }
-                break 'out;
-            }
-
             ret_value = match pattern_char {
                 '\\' => match pattern_iter.next().unwrap() {
                     'd' => {
@@ -171,6 +156,21 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                 if pattern_iter.clone().peekable().peek().is_none() {
                     break 'out;
                 }
+            }
+            // 判断input 是none,则跳出循环
+            if input_iter.clone().peekable().peek().is_none() {
+                println!("input get end!");
+                //if input end but pattern not end,return false
+                if pattern_iter.clone().peekable().peek().is_some() {
+                    if pattern_iter.clone().peekable().peek().unwrap() == &'$' {
+                        continue;
+                    }
+                    //如果没有匹配[],则匹配模式耗尽后返回false
+                    if !bracket_flag {
+                        ret_value = false;
+                    }
+                }
+                break 'out;
             }
         }
         if input_iter.clone().peekable().peek().is_none() {

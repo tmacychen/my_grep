@@ -109,6 +109,9 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
             if input_iter.clone().peekable().peek().is_none() {
                 println!("input get end!");
                 //if input end but pattern not end,return false
+                if pattern_iter.clone().peekable().peek().is_some() {
+                    ret_value = false
+                }
                 break 'out;
             }
             //结束本轮匹配

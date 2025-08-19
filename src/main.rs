@@ -26,10 +26,17 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
     'out: loop {
         let mut pattern_iter = pattern.chars();
         ret_value = false;
+        let mut first_match = false;
+        // match start with "^"
+        first_match = match pattern_iter.clone().peekable().peek().unwrap() {
+            '^' => true,
+            _ => false,
+        };
 
         loop {
             let pattern_char = pattern_iter.next().unwrap();
             println!("pattern_char {}", pattern_char);
+
             ret_value = match pattern_char {
                 '\\' => match pattern_iter.next().unwrap() {
                     'd' => {
@@ -51,6 +58,26 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                     }
                     _ => false,
                 },
+                '^' => {
+                    if first_match {
+                        let mut ret = true;
+                        while pattern_iter.clone().peekable().peek().is_some() {
+                            let pattern_char = pattern_iter.next().unwrap();
+                            match pattern_char {
+                                ' ' | 'a'..='z' | 'A'..='Z' => {
+                                    //如果字符匹配过程有错误
+                                    if input_iter.next().is_some_and(|c| c != pattern_char) {
+                                        ret = false;
+                                    }
+                                }
+                                _ => ret = false,
+                            }
+                        }
+                        ret
+                    } else {
+                        false
+                    }
+                }
                 '[' => {
                     let mut reverse = false;
                     //[abc] 只要匹配一个字符就可以返回true,否则返回false
@@ -75,7 +102,7 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                         }
                         let input_next = input_iter.next().unwrap();
                         let mut a_pattern_iter = a_pattern.iter();
-                        let mut ret = if reverse {
+                        let ret = if reverse {
                             a_pattern_iter
                                 .by_ref()
                                 .inspect(|&c| println!("{c}"))

@@ -23,6 +23,7 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
     let mut input_iter = input_line.chars();
     let mut ret_value = false;
     let mut bracket_flag = false;
+
     'out: loop {
         let mut pattern_iter = pattern.chars();
         ret_value = false;
@@ -36,6 +37,21 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
         loop {
             let pattern_char = pattern_iter.next().unwrap();
             println!("pattern_char {}", pattern_char);
+
+            // 判断input 是none,则跳出循环
+            if input_iter.clone().peekable().peek().is_none() {
+                println!("input get end!");
+                //if input end but pattern not end,return false
+                if pattern_iter.clone().peekable().peek().is_some() {
+                    //如果没有匹配[],则匹配模式耗尽后返回false
+                    if !bracket_flag {
+                        ret_value = false;
+                        println!("continue");
+                        continue;
+                    }
+                }
+                break 'out;
+            }
 
             ret_value = match pattern_char {
                 '\\' => match pattern_iter.next().unwrap() {
@@ -67,6 +83,11 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                                 ' ' | 'a'..='z' | 'A'..='Z' => {
                                     //如果字符匹配过程有错误
                                     if input_iter.next().is_some_and(|c| c != pattern_char) {
+                                        ret = false;
+                                    }
+                                }
+                                '$' => {
+                                    if pattern_iter.clone().peekable().peek().is_some() {
                                         ret = false;
                                     }
                                 }
@@ -132,6 +153,13 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                         false
                     }
                 }
+                '$' => {
+                    if input_iter.clone().peekable().peek().is_none() {
+                        true
+                    } else {
+                        false
+                    }
+                }
                 _ => false,
             };
             //结束本轮匹配
@@ -143,19 +171,6 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                 if pattern_iter.clone().peekable().peek().is_none() {
                     break 'out;
                 }
-            }
-
-            // 结束匹配 且返回ret_value匹配状态
-            if input_iter.clone().peekable().peek().is_none() {
-                println!("input get end!");
-                //if input end but pattern not end,return false
-                if pattern_iter.clone().peekable().peek().is_some() {
-                    //如果没有匹配[],则匹配模式耗尽后返回false
-                    if !bracket_flag {
-                        ret_value = false
-                    }
-                }
-                break 'out;
             }
         }
         if input_iter.clone().peekable().peek().is_none() {

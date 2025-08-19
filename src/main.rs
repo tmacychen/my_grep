@@ -20,8 +20,7 @@ struct Arg {
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
     let mut input_iter = input_line.chars();
     let mut ret_value = false;
-
-    loop {
+    'out: loop {
         let mut pattern_iter = pattern.chars();
         ret_value = false;
 
@@ -75,10 +74,12 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                     break;
                 }
             };
-            if pattern_iter.clone().peekable().peek().is_none()
-                || input_iter.clone().peekable().peek().is_none()
-            {
-                break;
+            if pattern_iter.clone().peekable().peek().is_none() {
+                if ret_value || input_iter.clone().peekable().peek().is_none() {
+                    break 'out;
+                } else {
+                    break;
+                }
             }
         }
         if input_iter.clone().peekable().peek().is_none() {

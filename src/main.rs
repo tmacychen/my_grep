@@ -1,3 +1,4 @@
+use std::collections::hash_map;
 use std::io;
 use std::process;
 
@@ -17,6 +18,7 @@ struct Arg {
     pattern: Option<String>,
 }
 
+#[warn(unused_assignments)]
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
     let mut input_iter = input_line.chars();
     let mut ret_value = false;
@@ -49,18 +51,48 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                     _ => false,
                 },
                 '[' => {
+                    let mut reverse = false;
                     let mut ret = false;
                     //[abc] 只要匹配一个字符就可以返回true,否则返回false
-                    while !ret {
-                        let next_char = pattern_iter.next().unwrap();
-                        println!("next_char {}", next_char);
-                        ret = match next_char {
-                            'a'..='z' | 'A'..='Z' => input_line.chars().any(|c| c == next_char),
-                            ']' => false,
-                            _ => false,
-                        };
+                    //[^abc] 只要匹配到一个字符，则返回false
+                    if pattern_iter
+                        .clone()
+                        .peekable()
+                        .peek()
+                        .is_some_and(|c| c == &'^')
+                    {
+                        pattern_iter.next().unwrap();
+                        reverse = true;
                     }
-                    ret
+                    let a_pattern: Vec<char> = pattern_iter.clone().filter(|c| c != &']').collect();
+
+                    let mut has_been_false = false;
+                    //消耗掉所有的input_iter内容
+                    loop {
+                        if input_iter.clone().peekable().peek().is_none() {
+                            break;
+                        }
+                        let input_next = input_iter.next().unwrap();
+                        let mut a_pattern_iter = a_pattern.iter();
+                        ret = if reverse {
+                            a_pattern_iter
+                                .by_ref()
+                                .inspect(|&c| println!("{c}"))
+                                .all(|c| c != &input_next)
+                        } else {
+                            a_pattern_iter.any(|c| c == &input_next)
+                        };
+                        if !ret {
+                            has_been_false = true;
+                        }
+                    }
+                    if has_been_false {
+                        println!("return false");
+                        false
+                    } else {
+                        println!("return {ret}");
+                        ret
+                    }
                 }
                 ' ' | 'a'..='z' | 'A'..='Z' => {
                     //如果字符匹配过程有错误，立刻跳出本轮匹配
@@ -75,10 +107,8 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
 
             // 结束匹配 且返回ret_value匹配状态
             if input_iter.clone().peekable().peek().is_none() {
+                println!("input get end!");
                 //if input end but pattern not end,return false
-                if pattern_iter.clone().peekable().peek().is_some() {
-                    ret_value = false
-                }
                 break 'out;
             }
             //结束本轮匹配

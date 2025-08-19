@@ -53,7 +53,6 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                 },
                 '[' => {
                     let mut reverse = false;
-                    let mut ret = false;
                     //[abc] 只要匹配一个字符就可以返回true,否则返回false
                     //[^abc] 只要匹配到一个字符，则返回false
                     if pattern_iter
@@ -68,15 +67,15 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                     let a_pattern: Vec<char> =
                         pattern_iter.clone().take_while(|c| c != &']').collect();
 
-                    let mut has_been_false = false;
-                    //消耗掉所有的input_iter内容
+                    let mut has_been_true = false;
                     loop {
+                        //匹配[]模式，直到消耗掉所有的input_iter内容
                         if input_iter.clone().peekable().peek().is_none() {
                             break;
                         }
                         let input_next = input_iter.next().unwrap();
                         let mut a_pattern_iter = a_pattern.iter();
-                        ret = if reverse {
+                        let mut ret = if reverse {
                             a_pattern_iter
                                 .by_ref()
                                 .inspect(|&c| println!("{c}"))
@@ -84,17 +83,18 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                         } else {
                             a_pattern_iter.any(|c| c == &input_next)
                         };
-                        if !ret {
-                            has_been_false = true;
+                        if ret {
+                            println!("has been true");
+                            has_been_true = true;
                         }
                     }
                     bracket_flag = true;
-                    if has_been_false {
+                    if !has_been_true {
                         println!("return false");
                         false
                     } else {
-                        println!("return {ret}");
-                        ret
+                        println!("return true");
+                        true
                     }
                 }
                 ' ' | 'a'..='z' | 'A'..='Z' => {

@@ -18,45 +18,73 @@ struct Arg {
 }
 
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
-    let mut pattern_iter = pattern.chars();
     let mut input_iter = input_line.chars();
-
     let mut ret_value = false;
 
     loop {
-        let pattern_char = pattern_iter.next().unwrap();
-        println!("pattern_char {}", pattern_char);
-        ret_value = match pattern_char {
-            '\\' => match pattern_iter.next().unwrap() {
-                'd' => input_iter.next().is_some_and(|c| c.is_numeric()),
-                'w' => input_iter
-                    .next()
-                    .is_some_and(|c| c.is_ascii_alphanumeric() || c == '_'),
-                _ => false,
-            },
-            '[' => {
-                let mut ret = false;
-                while !ret {
-                    let next_char = pattern_iter.next().unwrap();
-                    println!("next_char {}", next_char);
-                    ret = match next_char {
-                        'a'..='z' | 'A'..='Z' => input_line.chars().any(|c| c == next_char),
-                        ']' => false,
-                        _ => false,
-                    };
+        let mut pattern_iter = pattern.chars();
+        ret_value = false;
+
+        loop {
+            let pattern_char = pattern_iter.next().unwrap();
+            println!("pattern_char {}", pattern_char);
+            ret_value = match pattern_char {
+                '\\' => match pattern_iter.next().unwrap() {
+                    'd' => {
+                        if input_iter.find(|c| c.is_numeric()).is_some() {
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                    'w' => {
+                        if input_iter
+                            .find(|c| c.is_ascii_alphanumeric() || c == &'_')
+                            .is_some()
+                        {
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                    _ => false,
+                },
+                '[' => {
+                    let mut ret = false;
+                    //[abc] 只要匹配一个字符就可以返回true,否则返回false
+                    while !ret {
+                        let next_char = pattern_iter.next().unwrap();
+                        println!("next_char {}", next_char);
+                        ret = match next_char {
+                            'a'..='z' | 'A'..='Z' => input_line.chars().any(|c| c == next_char),
+                            ']' => false,
+                            _ => false,
+                        };
+                    }
+                    ret
                 }
-                ret
-            }
-            ' ' | 'a'..='z' | 'A'..='Z' => input_iter.next().is_some_and(|c| c == pattern_char),
-            _ => {
+                ' ' | 'a'..='z' | 'A'..='Z' => {
+                    //如果字符匹配过程有错误，立刻跳出本轮匹配
+                    if input_iter.next().is_some_and(|c| c == pattern_char) {
+                        true
+                    } else {
+                        break;
+                    }
+                }
+                _ => {
+                    break;
+                }
+            };
+            if pattern_iter.clone().peekable().peek().is_none()
+                || input_iter.clone().peekable().peek().is_none()
+            {
                 break;
             }
-        };
-        if ret_value || pattern_iter.clone().peekable().peek().is_none() {
+        }
+        if input_iter.clone().peekable().peek().is_none() {
             break;
         }
     }
-
     ret_value
 }
 

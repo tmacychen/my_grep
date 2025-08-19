@@ -128,10 +128,51 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                 ' ' | 'a'..='z' | 'A'..='Z' => {
                     if pattern_iter.peek().is_some_and(|c| c == &'+') {
                         pattern_iter.next().unwrap(); // consume the '+'
-                        while input_iter.peek().unwrap() == &pattern_char {
-                            input_iter.next().unwrap();
+                        let mut backtrack_points = vec![input_iter.clone()]; // 保存回溯点
+                        let mut count = 0;
+
+                        // 1. 至少匹配一次
+                        if input_iter.next() != Some(pattern_char) {
+                            return false;
                         }
-                        true
+                        count = 1;
+                        backtrack_points.push(input_iter.clone());
+
+                        // 2. 记录所有可能的回溯点
+                        while input_iter.peek() == Some(&pattern_char) {
+                            input_iter.next();
+                            count += 1;
+                            backtrack_points.push(input_iter.clone());
+                        }
+
+                        // 3. 尝试从最大重复次数开始回溯
+                        for i in (1..=count).rev() {
+                            input_iter = backtrack_points[i].clone(); // 恢复输入迭代器
+                            let mut pattern_iter_copy = pattern_iter.clone(); // 复制模式迭代器
+                            let mut input_iter_copy = input_iter.clone();
+
+                            // 4. 检查后续模式是否匹配
+                            let mut success = true;
+                            while let Some(next_char) = pattern_iter_copy.next() {
+                                match next_char {
+                                    // 其他匹配逻辑（省略）...
+                                    'a'..='z' | 'A'..='Z' => {
+                                        if input_iter_copy.next() != Some(next_char) {
+                                            success = false;
+                                            break;
+                                        }
+                                    }
+                                    _ => success = false,
+                                }
+                            }
+
+                            // 5. 找到可行解直接返回
+                            if success {
+                                input_iter = input_iter_copy; // 更新输入迭代器
+                                return true;
+                            }
+                        }
+                        false
                     } else if input_iter.next().is_some_and(|c| c == pattern_char) {
                         true
                     } else {

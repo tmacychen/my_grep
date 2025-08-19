@@ -20,12 +20,12 @@ struct Arg {
 
 #[warn(unused_assignments)]
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
-    let mut input_iter = input_line.chars();
+    let mut input_iter = input_line.chars().peekable();
     let mut ret_value = false;
     let mut bracket_flag = false;
 
     'out: loop {
-        let mut pattern_iter = pattern.chars();
+        let mut pattern_iter = pattern.chars().peekable();
         ret_value = false;
         let mut first_match = false;
         // match start with "^"
@@ -88,12 +88,7 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                     let mut reverse = false;
                     //[abc] 只要匹配一个字符就可以返回true,否则返回false
                     //[^abc] 只要匹配到一个字符，则返回false
-                    if pattern_iter
-                        .clone()
-                        .peekable()
-                        .peek()
-                        .is_some_and(|c| c == &'^')
-                    {
+                    if pattern_iter.peek().is_some_and(|c| c == &'^') {
                         pattern_iter.next().unwrap();
                         reverse = true;
                     }
@@ -103,7 +98,7 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                     let mut has_been_true = false;
                     loop {
                         //匹配[]模式，直到消耗掉所有的input_iter内容
-                        if input_iter.clone().peekable().peek().is_none() {
+                        if input_iter.peek().is_none() {
                             break;
                         }
                         let input_next = input_iter.next().unwrap();
@@ -131,8 +126,13 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                     }
                 }
                 ' ' | 'a'..='z' | 'A'..='Z' => {
-                    //如果字符匹配过程有错误，立刻跳出本轮匹配
-                    if input_iter.next().is_some_and(|c| c == pattern_char) {
+                    if pattern_iter.peek().is_some_and(|c| c == &'+') {
+                        pattern_iter.next().unwrap(); // consume the '+'
+                        while input_iter.peek().unwrap() == &pattern_char {
+                            input_iter.next().unwrap();
+                        }
+                        true
+                    } else if input_iter.next().is_some_and(|c| c == pattern_char) {
                         true
                     } else {
                         false

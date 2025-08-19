@@ -67,18 +67,26 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                     if input_iter.next().is_some_and(|c| c == pattern_char) {
                         true
                     } else {
-                        break;
+                        false
                     }
                 }
-                _ => {
-                    break;
-                }
+                _ => false,
             };
-            if pattern_iter.clone().peekable().peek().is_none() {
-                if ret_value || input_iter.clone().peekable().peek().is_none() {
+
+            // 结束匹配 且返回ret_value匹配状态
+            if input_iter.clone().peekable().peek().is_none() {
+                //if input end but pattern not end,return false
+                if pattern_iter.clone().peekable().peek().is_some() {
+                    ret_value = false
+                }
+                break 'out;
+            }
+            //结束本轮匹配
+            if !ret_value {
+                break;
+            } else {
+                if pattern_iter.clone().peekable().peek().is_none() {
                     break 'out;
-                } else {
-                    break;
                 }
             }
         }

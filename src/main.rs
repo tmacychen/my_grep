@@ -22,6 +22,7 @@ struct Arg {
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
     let mut input_iter = input_line.chars();
     let mut ret_value = false;
+    let mut bracket_flag = false;
     'out: loop {
         let mut pattern_iter = pattern.chars();
         ret_value = false;
@@ -64,7 +65,8 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                         pattern_iter.next().unwrap();
                         reverse = true;
                     }
-                    let a_pattern: Vec<char> = pattern_iter.clone().filter(|c| c != &']').collect();
+                    let a_pattern: Vec<char> =
+                        pattern_iter.clone().take_while(|c| c != &']').collect();
 
                     let mut has_been_false = false;
                     //消耗掉所有的input_iter内容
@@ -86,6 +88,7 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                             has_been_false = true;
                         }
                     }
+                    bracket_flag = true;
                     if has_been_false {
                         println!("return false");
                         false
@@ -104,23 +107,28 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                 }
                 _ => false,
             };
+            //结束本轮匹配
+            //
+            if !ret_value {
+                break;
+            } else {
+                //如果匹配成功，且模式字符消耗完成，则退出
+                if pattern_iter.clone().peekable().peek().is_none() {
+                    break 'out;
+                }
+            }
 
             // 结束匹配 且返回ret_value匹配状态
             if input_iter.clone().peekable().peek().is_none() {
                 println!("input get end!");
                 //if input end but pattern not end,return false
                 if pattern_iter.clone().peekable().peek().is_some() {
-                    ret_value = false
+                    //如果没有匹配[],则匹配模式耗尽后返回false
+                    if !bracket_flag {
+                        ret_value = false
+                    }
                 }
                 break 'out;
-            }
-            //结束本轮匹配
-            if !ret_value {
-                break;
-            } else {
-                if pattern_iter.clone().peekable().peek().is_none() {
-                    break 'out;
-                }
             }
         }
         if input_iter.clone().peekable().peek().is_none() {

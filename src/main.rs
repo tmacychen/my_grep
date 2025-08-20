@@ -126,7 +126,20 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                     }
                 }
                 ' ' | 'a'..='z' | 'A'..='Z' => {
-                    if pattern_iter.peek().is_some_and(|c| c == &'+') {
+                    //TODO:
+                    if pattern_iter.peek().is_some_and(|c| c == &'?') {
+                        pattern_iter.next(); // 消耗 '?'
+                        let saved_state = input_iter.clone(); // 保存输入状态
+                        if input_iter.next() == Some(pattern_char) {
+                            true // 匹配1次成功
+                        } else {
+                            input_iter = saved_state; // 恢复状态（0次匹配）
+                            true // 0次匹配始终成功
+                        }
+                    } else if pattern_iter.peek().is_some_and(|c| c == &'*') {
+                        pattern_iter.next(); // 消耗 '*'
+                        true
+                    } else if pattern_iter.peek().is_some_and(|c| c == &'+') {
                         pattern_iter.next().unwrap(); // consume the '+'
                         let mut backtrack_points = vec![input_iter.clone()]; // 保存回溯点
                         let mut count = 0;

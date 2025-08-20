@@ -37,13 +37,13 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
             let pattern_char = pattern_iter.next().unwrap();
             println!("pattern_char {}", pattern_char);
 
-            ret_value = match pattern_char {
+            match pattern_char {
                 '\\' => match pattern_iter.next().unwrap() {
                     'd' => {
                         if input_iter.find(|c| c.is_numeric()).is_some() {
-                            true
+                            ret_value = true
                         } else {
-                            false
+                            ret_value = false;
                         }
                     }
                     'w' => {
@@ -51,12 +51,12 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                             .find(|c| c.is_ascii_alphanumeric() || c == &'_')
                             .is_some()
                         {
-                            true
+                            ret_value = true;
                         } else {
-                            false
+                            ret_value = false;
                         }
                     }
-                    _ => false,
+                    _ => ret_value = false,
                 },
                 '^' => {
                     if first_match {
@@ -78,9 +78,9 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                                 _ => ret = false,
                             }
                         }
-                        ret
+                        ret_value = ret;
                     } else {
-                        false
+                        ret_value = false;
                     }
                 }
                 '[' => {
@@ -118,22 +118,20 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                     bracket_flag = true;
                     if !has_been_true {
                         println!("return false");
-                        false
+                        ret_value = false;
                     } else {
                         println!("return true");
-                        true
+                        ret_value = true;
                     }
                 }
                 ' ' | 'a'..='z' | 'A'..='Z' => {
-                    //TODO:
                     if pattern_iter.peek().is_some_and(|c| c == &'?') {
                         pattern_iter.next(); // 消耗 '?'
-                        let saved_state = input_iter.clone(); // 保存输入状态
-                        if input_iter.next() == Some(pattern_char) {
-                            return true; // 匹配1次成功
+                        if input_iter.peek() == Some(&pattern_char) {
+                            input_iter.next(); //消耗掉1个字符
+                            ret_value = true; // 匹配1次成功
                         } else {
-                            input_iter = saved_state; // 恢复状态（0次匹配）
-                            return true; // 0次匹配始终成功
+                            ret_value = true; // 0次匹配始终成功
                         }
                     }
                     if input_iter.next().is_some_and(|c| c == pattern_char) {
@@ -155,15 +153,15 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                                     input_iter.find(|c| c == &pattern_next_char);
                                 }
                             }
-                            true
+                            ret_value = true;
                         } else if pattern_iter.peek().is_some_and(|c| c == &'+') {
                             pattern_iter.next().unwrap(); // consume the '+'
                             let mut backtrack_points = vec![input_iter.clone()]; // 保存回溯点
-                            let mut count = 0;
+                            let mut count: usize = 0;
 
                             // 1. 至少匹配一次
                             if input_iter.next() != Some(pattern_char) {
-                                return false;
+                                ret_value = false;
                             }
                             count = 1;
                             backtrack_points.push(input_iter.clone());
@@ -199,25 +197,25 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                                 // 5. 找到可行解直接返回
                                 if success {
                                     input_iter = input_iter_copy; // 更新输入迭代器
-                                    return true;
+                                    ret_value = true;
                                 }
                             }
-                            false
+                            ret_value = false;
                         } else {
-                            true
+                            ret_value = true;
                         }
                     } else {
-                        false
+                        ret_value = false;
                     }
                 }
                 '$' => {
                     if input_iter.clone().peekable().peek().is_none() {
-                        true
+                        ret_value = true;
                     } else {
-                        false
+                        ret_value = false;
                     }
                 }
-                _ => false,
+                _ => ret_value = false,
             };
             //结束本轮匹配
             //
@@ -226,6 +224,7 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
             } else {
                 //如果匹配成功，且模式字符消耗完成，则退出
                 if pattern_iter.peek().is_none() {
+                    println!("pattern is none,break;");
                     break 'out;
                 }
             }

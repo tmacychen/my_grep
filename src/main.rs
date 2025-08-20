@@ -18,7 +18,6 @@ struct Arg {
     pattern: Option<String>,
 }
 
-#[warn(unused_assignments)]
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
     let mut input_iter = input_line.chars().peekable();
     let mut ret_value = false;
@@ -136,9 +135,6 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                             input_iter = saved_state; // 恢复状态（0次匹配）
                             true // 0次匹配始终成功
                         }
-                    } else if pattern_iter.peek().is_some_and(|c| c == &'*') {
-                        pattern_iter.next(); // 消耗 '*'
-                        true
                     } else if pattern_iter.peek().is_some_and(|c| c == &'+') {
                         pattern_iter.next().unwrap(); // consume the '+'
                         let mut backtrack_points = vec![input_iter.clone()]; // 保存回溯点
@@ -187,6 +183,10 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                         }
                         false
                     } else if input_iter.next().is_some_and(|c| c == pattern_char) {
+                        if pattern_iter.peek().is_some_and(|c| c == &'.') {
+                            pattern_iter.next(); // 消耗 '.'
+                            input_iter.next(); // 消耗下一个字符
+                        }
                         true
                     } else {
                         false
@@ -207,7 +207,7 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                 break;
             } else {
                 //如果匹配成功，且模式字符消耗完成，则退出
-                if pattern_iter.clone().peekable().peek().is_none() {
+                if pattern_iter.peek().is_none() {
                     break 'out;
                 }
             }

@@ -1,11 +1,11 @@
-use std::collections::hash_map;
 use std::io;
 use std::process;
 
 use clap::Parser;
 use log::Log;
-use tklog::debug;
-use tklog::{error, info, Format, LEVEL, LOG};
+use tklog::Format;
+use tklog::LEVEL;
+use tklog::LOG;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -126,17 +126,18 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                 }
                 ' ' | 'a'..='z' | 'A'..='Z' => {
                     //TODO:
+                    if pattern_iter.peek().is_some_and(|c| c == &'?') {
+                        pattern_iter.next(); // 消耗 '?'
+                        let saved_state = input_iter.clone(); // 保存输入状态
+                        if input_iter.next() == Some(pattern_char) {
+                            return true; // 匹配1次成功
+                        } else {
+                            input_iter = saved_state; // 恢复状态（0次匹配）
+                            return true; // 0次匹配始终成功
+                        }
+                    }
                     if input_iter.next().is_some_and(|c| c == pattern_char) {
-                        if pattern_iter.peek().is_some_and(|c| c == &'?') {
-                            pattern_iter.next(); // 消耗 '?'
-                            let saved_state = input_iter.clone(); // 保存输入状态
-                            if input_iter.next() == Some(pattern_char) {
-                                true // 匹配1次成功
-                            } else {
-                                input_iter = saved_state; // 恢复状态（0次匹配）
-                                true // 0次匹配始终成功
-                            }
-                        } else if pattern_iter.peek().is_some_and(|c| c == &'.') {
+                        if pattern_iter.peek().is_some_and(|c| c == &'.') {
                             pattern_iter.next(); // 消耗 '.'
                             input_iter.next(); // 消耗下一个字符
 

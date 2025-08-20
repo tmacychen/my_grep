@@ -129,9 +129,9 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                         pattern_iter.next(); // 消耗 '?'
                         if input_iter.peek() == Some(&pattern_char) {
                             input_iter.next(); //消耗掉1个字符
-                            ret_value = true; // 匹配1次成功
+                            continue;
                         } else {
-                            ret_value = true; // 0次匹配始终成功
+                            continue; // 0次匹配始终成功
                         }
                     }
                     if input_iter.next().is_some_and(|c| c == pattern_char) {

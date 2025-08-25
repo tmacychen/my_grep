@@ -1,5 +1,7 @@
 use std::io;
+use std::iter::Peekable;
 use std::process;
+use std::str::Chars;
 
 use clap::Parser;
 use log::Log;
@@ -18,31 +20,93 @@ struct Arg {
     pattern: Option<String>,
 }
 
+// Usage: echo <input_text> | your_program.sh -E <pattern>
+fn main() {
+    // You can use print statements as follows for debugging, they'll be visible when running tests.
+    // eprintln!("Logs from your program will appear here!");
+    LOG.set_level(LEVEL::Debug)
+        .set_format(Format::LevelFlag | Format::ShortFileName)
+        .set_formatter("{level} | {file}:{message} \n");
+
+    let args = Arg::parse();
+
+    if let Some(pattern) = args.pattern {
+        let mut input_line = String::new();
+        io::stdin().read_line(&mut input_line).unwrap();
+
+        // Uncomment this block to pass the first stage
+        log::debug!("{pattern},{input_line}");
+        if match_pattern(&input_line, &pattern) {
+            LOG.flush();
+            println!("success exit 0!");
+            process::exit(0)
+        } else {
+            LOG.flush();
+            println!("fail exit 1!");
+            process::exit(1)
+        }
+    }
+}
+
+// fn match_pattern(input_line: &str, pattern: &str) -> bool {
+//     //parse pattern
+//     let mut pat_iter = pattern.chars().peekable();
+//     loop{
+//         if pat_iter.peek().is_none(){
+//             break;
+//         }
+
+//     }
+
+//     if pattern.contains("|") {
+//         let mut pats = Vec::new();
+//         pattern.split("|").for_each(|c| {
+//             if c.strip_prefix("(").is_some() {
+//                 pats.push(c.strip_prefix("(").unwrap())
+//             } else if c.strip_suffix(")").is_some() {
+//                 pats.push(c.strip_suffix(")").unwrap())
+//             } else {
+//                 pats.push(c);
+//             }
+//         });
+//         println!("{:?}", pats);
+
+//         for pat in pats {
+//             if match_abc(input_line, pat) {
+//                 return true;
+//             }
+//         }
+//         return false;
+//     }
+//     match_abc(input_line, pattern)
+// }
+// fn match_abc(input_line: &str, pattern: &str) -> bool {
+//     input_line.contains(pattern)
+// }
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
     let mut input_iter = input_line.chars().peekable();
     let mut ret_value = false;
     let mut bracket_flag = false;
 
-    if pattern.contains("|") {
-        let mut pats = Vec::new();
-        pattern.split("|").for_each(|c| {
-            if c.strip_prefix("(").is_some() {
-                pats.push(c.strip_prefix("(").unwrap())
-            } else if c.strip_suffix(")").is_some() {
-                pats.push(c.strip_suffix(")").unwrap())
-            } else {
-                pats.push(c);
-            }
-        });
-        println!("{:?}", pats);
+    // if pattern.contains("|") {
+    //     pattern.split("|").for_each(|c| {
+    //         if c.strip_prefix("(").is_some() {
+    //             pats.push(c.strip_prefix("(").unwrap())
+    //         } else if c.strip_suffix(")").is_some() {
+    //             pats.push(c.strip_suffix(")").unwrap())
+    //         } else {
+    //             pats.push(c);
+    //         }
+    //     });
+    //     println!("{:?}", pats);
 
-        for pat in pats {
-            if input_line.contains(pat) {
-                return true;
-            }
-        }
-        return false;
-    }
+    //     for pat in pats {
+    //         if input_line.contains(pat) {
+    //             return true;
+    //         }
+    //     }
+    //     return false;
+    // }
 
     'out: loop {
         let mut pattern_iter = pattern.chars().peekable();
@@ -54,10 +118,11 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
             _ => false,
         };
 
+        let mut in_parentheses = false;
+        let mut input_tag1: Peekable<Chars<'_>> = input_iter.clone();
         loop {
             let pattern_char = pattern_iter.next().unwrap();
             println!("pattern_char {}", pattern_char);
-
             match pattern_char {
                 '\\' => match pattern_iter.next().unwrap() {
                     'd' => {
@@ -103,6 +168,17 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                     } else {
                         ret_value = false;
                     }
+                }
+                '(' => {
+                    in_parentheses = true;
+                    input_tag1 = input_iter.clone();
+                }
+                '|' => {
+                    //回溯到括号处
+                    input_iter = input_tag1.clone();
+                }
+                ')' => {
+                    in_parentheses = false;
                 }
                 '[' => {
                     let mut reverse = false;
@@ -236,10 +312,14 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
             //结束本轮匹配
             //
             if !ret_value {
-                break;
+                if in_parentheses {
+                    continue;
+                } else {
+                    break;
+                }
             } else {
                 //如果匹配成功，且模式字符消耗完成，则退出
-                if pattern_iter.peek().is_none() {
+                if pattern_iter.peek().is_none() || pattern_iter.peek().unwrap() == &')' {
                     println!("pattern is none,break;");
                     break 'out;
                 }
@@ -251,6 +331,9 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                 if pattern_iter.peek().is_some() {
                     if pattern_iter.peek().unwrap() == &'$' {
                         continue;
+                    }
+                    if pattern_iter.peek().unwrap() == &'|' {
+                        break 'out;
                     }
                     //如果没有匹配[],则匹配模式耗尽后返回false
                     if !bracket_flag {
@@ -265,32 +348,4 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
         }
     }
     ret_value
-}
-
-// Usage: echo <input_text> | your_program.sh -E <pattern>
-fn main() {
-    // You can use print statements as follows for debugging, they'll be visible when running tests.
-    // eprintln!("Logs from your program will appear here!");
-    LOG.set_level(LEVEL::Debug)
-        .set_format(Format::LevelFlag | Format::ShortFileName)
-        .set_formatter("{level} | {file}:{message} \n");
-
-    let args = Arg::parse();
-
-    if let Some(pattern) = args.pattern {
-        let mut input_line = String::new();
-        io::stdin().read_line(&mut input_line).unwrap();
-
-        // Uncomment this block to pass the first stage
-        log::debug!("{pattern},{input_line}");
-        if match_pattern(&input_line, &pattern) {
-            LOG.flush();
-            println!("success exit 0!");
-            process::exit(0)
-        } else {
-            LOG.flush();
-            println!("fail exit 1!");
-            process::exit(1)
-        }
-    }
 }

@@ -23,6 +23,27 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
     let mut ret_value = false;
     let mut bracket_flag = false;
 
+    if pattern.contains("|") {
+        let mut pats = Vec::new();
+        pattern.split("|").for_each(|c| {
+            if c.strip_prefix("(").is_some() {
+                pats.push(c.strip_prefix("(").unwrap())
+            } else if c.strip_suffix(")").is_some() {
+                pats.push(c.strip_suffix(")").unwrap())
+            } else {
+                pats.push(c);
+            }
+        });
+        println!("{:?}", pats);
+
+        for pat in pats {
+            if input_line.contains(pat) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     'out: loop {
         let mut pattern_iter = pattern.chars().peekable();
         ret_value = false;
@@ -61,7 +82,7 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                 '^' => {
                     if first_match {
                         let mut ret = true;
-                        while pattern_iter.clone().peekable().peek().is_some() {
+                        while pattern_iter.peek().is_some() {
                             let pattern_char = pattern_iter.next().unwrap();
                             match pattern_char {
                                 ' ' | 'a'..='z' | 'A'..='Z' => {
@@ -204,7 +225,7 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                     }
                 }
                 '$' => {
-                    if input_iter.clone().peekable().peek().is_none() {
+                    if input_iter.peek().is_none() {
                         ret_value = true;
                     } else {
                         ret_value = false;
@@ -239,7 +260,7 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                 break 'out;
             }
         }
-        if input_iter.clone().peekable().peek().is_none() {
+        if input_iter.peek().is_none() {
             break;
         }
     }
